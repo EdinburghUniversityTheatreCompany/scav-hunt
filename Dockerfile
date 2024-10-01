@@ -25,9 +25,11 @@ ENV RAILS_ENV="production" \
 # Throw-away build stage to reduce size of final image
 FROM base AS build
 
+ENV PATH="/usr/bin:${PATH}"
+
 # Install packages needed to build gems and node modules
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y default-libmysqlclient-dev node-gyp pkg-config python-is-python3 && \
+    apt-get install --no-install-recommends -y git && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Install JavaScript dependencies
@@ -42,7 +44,9 @@ RUN curl -sL https://github.com/nodenv/node-build/archive/master.tar.gz | tar xz
 # Install application gems
 COPY Gemfile Gemfile.lock ./
 RUN bundle config set --local without 'development test'
-RUN bundle install
+RUN bundle config set frozen false
+RUN GIT_EXECUTABLE=/usr/bin/git bundle install
+RUN bundle exec bootsnap precompile --gemfile
 RUN rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git
 
 # Install node modules
