@@ -1,0 +1,14 @@
+<%= simple_form_for :import, url: import_users_path, multipart: true do |f| %>
+  <p class="mt-3">
+    CSV file should have the following headers: Name, Email, Password. Role is optional and
+    defaults to <code>team</code>; the other values it accepts are <code>scorer</code> and
+    <code>admin</code>.<br>
+    <strong>IMPORTANT:</strong> If a user with the same Email already exists they are skipped,
+    not updated — an existing password is never changed by an import.
+  </p>
+
+  <%= f.input :file, as: :file, accept: 'text/csv', label: 'Select CSV file' %>
+
+  <%= f.submit 'Import', class: 'btn btn-primary' %>
+  <%= link_to 'Back', users_path, class: 'btn btn-secondary' %>
+<% end %>

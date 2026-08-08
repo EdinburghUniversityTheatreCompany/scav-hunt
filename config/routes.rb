@@ -12,7 +12,12 @@ Rails.application.routes.draw do
     end
   end
 
-  resources :users
+  resources :users do
+    collection do
+      get :import_form
+      post :import
+    end
+  end
 
   get "scoring", to: "scoring#index"
   get "scoring/:id", to: "scoring#score", as: :scoring_score

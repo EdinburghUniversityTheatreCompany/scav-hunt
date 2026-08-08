@@ -53,7 +53,53 @@ class UsersController < ApplicationController
     end
   end
 
+  def import_form
+    @title = "Import Users"
+  end
+
+  def import
+    file = params.dig(:import, :file)
+    return import_failed("Please select a file to import.") if file.blank?
+
+    result = UserImport.new(file).call
+
+    if result.success?
+      redirect_to users_path, notice: "Imported #{result.created.size} #{'user'.pluralize(result.created.size)}."
+    else
+      import_failed(import_report(result))
+    end
+  end
+
   private
+
+  # Turbo discards a 200 response to a form submission, so a report rendered without an error
+  # status is invisible. flash.now, not flash: the message belongs to this render, not the next
+  # request.
+  def import_failed(message)
+    @title = "Import Users"
+    flash.now[:alert] = message
+    render "import_form", status: :unprocessable_entity
+  end
+
+  # Never includes a password, in any branch.
+  def import_report(result)
+    return "CSV is missing required columns: #{result.missing_headers.to_sentence}." if result.missing_headers.any?
+    return result.error if result.error.present?
+
+    parts = [ "Created #{result.created.size}." ]
+
+    if result.skipped.any?
+      parts << "Skipped #{result.skipped.size} (already exist): #{result.skipped.to_sentence}."
+    end
+
+    if result.rejected.any?
+      details = result.rejected.first(5).map { |r| "row #{r[:row]}: #{r[:reason]}" }
+      details << "and #{result.rejected.size - 5} more" if result.rejected.size > 5
+      parts << "#{result.rejected.size} rejected — #{details.join('; ')}."
+    end
+
+    parts.join(" ")
+  end
 
   # A destroy vetoed by Result#ensure_zero_points records its reason on the
   # result, not on the user, so collect both.
