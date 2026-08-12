@@ -19,11 +19,10 @@ class ScoringController < ApplicationController
 
   # POST /scoring/update
   def update
-    @result = Result.find_or_initialize_by(challenge_id: params[:challenge_id], user_id: params[:user_id])
-    assign_submitted_points
-    @result.updated_by_id = current_user.id
+    @result = find_or_build_result
+    apply_submission
 
-    if @result.save
+    if save_result
       # Only the columns that really moved get repainted; see the stream partial.
       @fields = @result.saved_changes.keys & Result::POINT_FIELDS
       @updated_by = current_user.id
@@ -39,6 +38,36 @@ class ScoringController < ApplicationController
   end
 
   private
+
+  def find_or_build_result
+    Result.find_or_initialize_by(challenge_id: params[:challenge_id], user_id: params[:user_id])
+  end
+
+  def apply_submission
+    assign_submitted_points
+    @result.updated_by_id = current_user.id
+  end
+
+  # The uniqueness validation is a SELECT taken before the INSERT, so two scorers who
+  # open a challenge nobody has scored yet can both pass it and whichever INSERT lands
+  # second trips the unique index on [user_id, challenge_id]. That used to escape as a
+  # 500 and the score was simply lost.
+  #
+  # Losing the race is not a failure, though: the row the other request just committed
+  # is the row this one meant to update. Re-read it and lay this request's column on
+  # top, which is exactly what would have happened had the two arrived a moment
+  # further apart. Once only, because a second conflict means something other than a
+  # concurrent create and should be seen rather than swallowed.
+  def save_result
+    @result.save
+  rescue ActiveRecord::RecordNotUnique
+    raise if @lost_insert_race
+
+    @lost_insert_race = true
+    @result = find_or_build_result
+    apply_submission
+    retry
+  end
 
   # Assign only the columns the scorer actually submitted. The old handler read BOTH
   # points fields out of the DOM and posted them together, so two saves in flight --

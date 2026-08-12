@@ -84,3 +84,75 @@ class ScoringControllerTest < ActionDispatch::IntegrationTest
     assert_equal 1500, @result.reload.regular_points
   end
 end
+
+# Two requests that both score a challenge nobody has scored yet each build a new
+# Result, and the uniqueness validation is a SELECT taken before the INSERT, so both
+# can pass it. Whichever INSERT lands second hits the unique index on
+# [user_id, challenge_id] and used to come back as an unrescued
+# ActiveRecord::RecordNotUnique -- a 500 in the scorer's face, with their score lost.
+#
+# Staging that needs the winning row to be committed by somebody else while this
+# request's own transaction is open, which the suite's transactional wrapper cannot
+# express -- our INSERT's rollback would take the other row with it. So this class
+# opts out of transactional tests and cleans up the rows it commits.
+class ScoringControllerRaceTest < ActionDispatch::IntegrationTest
+  self.use_transactional_tests = false
+
+  setup do
+    @team = users(:team_one)
+    @challenge = challenges(:three) # No fixture result, so both requests would INSERT.
+    sign_in users(:scorer)
+  end
+
+  teardown do
+    Result.where(challenge_id: @challenge.id).delete_all
+  end
+
+  test "a scorer who loses the insert race still has their score recorded" do
+    losing_the_race_to(bonus_points: 42) do
+      post scoring_update_path, params: { challenge_id: @challenge.id, user_id: @team.id, regular_points: 300 }
+    end
+
+    assert_response :success
+
+    results = Result.where(challenge_id: @challenge.id, user_id: @team.id)
+    assert_equal 1, results.count, "The race left a duplicate row behind"
+    assert_equal 300, results.first.regular_points, "The score that lost the race was dropped"
+    assert_equal 42, results.first.bonus_points, "The winning request's column was overwritten"
+  end
+
+  private
+
+  # Commits the row the other request would have created, in the window between this
+  # request's uniqueness check and its INSERT. A separate connection, because the row
+  # has to outlive the failed INSERT's rollback exactly as a committed one would.
+  def losing_the_race_to(bonus_points:)
+    inserted = false
+    # Bound up front: ActiveSupport runs the callback against the Result, so `self`
+    # inside it is the record being saved, not this test.
+    commit_winner = method(:commit_result_on_another_connection)
+    callback = ->(_result) do
+      next if inserted
+
+      inserted = true
+      commit_winner.call(bonus_points)
+    end
+
+    Result.set_callback(:validation, :after, callback)
+    yield
+    assert inserted, "The race was never staged, so this proves nothing"
+  ensure
+    Result.skip_callback(:validation, :after, callback, raise: false)
+  end
+
+  def commit_result_on_another_connection(bonus_points)
+    pool = ActiveRecord::Base.connection_pool
+    other = pool.checkout
+    other.execute(<<~SQL.squish)
+      INSERT INTO results (user_id, challenge_id, regular_points, bonus_points, created_at, updated_at)
+      VALUES (#{@team.id.to_i}, #{@challenge.id.to_i}, 0, #{bonus_points.to_i}, NOW(), NOW())
+    SQL
+  ensure
+    pool.checkin(other) if other
+  end
+end
