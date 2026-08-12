@@ -42,9 +42,15 @@
           <%= render 'scoring/status', challenge: challenge, result: result %>
 
           <td>
-            <%= button_to 'Full Points', scoring_update_path,
-                          params: { challenge_id: challenge.id, user_id: @team.id, regular_points: challenge.points },
-                          class: 'btn btn-sm btn-primary' %>
+            <%# Deliberately not a form of its own: it fills in the regular points
+                field and lets that field's form save, so one click is one write. %>
+            <%= tag.button "Full Points", type: "button", class: "btn btn-sm btn-primary",
+                           data: {
+                             controller: "full-points",
+                             action: "mousedown->full-points#keepFocus click->full-points#award",
+                             full_points_auto_submit_outlet: "##{dom_id(challenge, 'regular_points_form')}",
+                             full_points_points_value: challenge.points
+                           } %>
           </td>
         </tr>
       <% end %>

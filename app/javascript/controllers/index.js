@@ -16,5 +16,8 @@ application.register("countdown", CountdownController)
 import FlashController from "./flash_controller"
 application.register("flash", FlashController)
 
+import FullPointsController from "./full_points_controller"
+application.register("full-points", FullPointsController)
+
 import StatisticsController from "./statistics_controller"
 application.register("statistics", StatisticsController)

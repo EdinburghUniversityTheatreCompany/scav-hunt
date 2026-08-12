@@ -4,12 +4,16 @@
     column cannot revert the other one. %>
 <%= tag.td id: dom_id(challenge, field),
            data: { controller: ("flash" if updated_by), flash_updated_by_value: updated_by } do %>
+  <%# The id is what the Full Points button reaches this form by; see
+      full_points_controller.js. %>
   <%= form_with url: scoring_update_path, method: :post, class: "input-group",
+                id: dom_id(challenge, "#{field}_form"),
                 data: { controller: "auto-submit", action: "change->auto-submit#submit" } do |form| %>
     <%= form.hidden_field :challenge_id, value: challenge.id %>
     <%= form.hidden_field :user_id, value: team.id %>
     <%= form.number_field field, value: result&.public_send(field) || 0,
                           id: "#{field.to_s.camelize(:lower)}_#{challenge.id}",
-                          class: "form-control form-control-sm" %>
+                          class: "form-control form-control-sm",
+                          data: { auto_submit_target: "input" } %>
   <% end %>
 <% end %>

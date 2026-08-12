@@ -60,6 +60,46 @@ class ScoringTest < ApplicationSystemTestCase
     assert_equal @challenge.points, Result.find_by(challenge: @challenge, user: @team).regular_points
   end
 
+  # Clicking a button blurs whatever was focused, and that blur is what fires the
+  # input's `change`. So a scorer who types a value and then reaches for Full Points
+  # used to send two writes about 50ms apart -- the typed value and the full value --
+  # and the row kept whichever of them committed last, which is not necessarily the
+  # one they clicked for. Both landing at once is also what exposed the insert race.
+  test "awarding full points over a typed value writes once" do
+    visit scoring_score_url(@team)
+
+    writes = counting_scoring_updates do
+      within "tr", text: @challenge.description do
+        fill_in id: "regularPoints_#{@challenge.id}", with: 150
+        click_on "Full Points"
+
+        assert_field id: "regularPoints_#{@challenge.id}", with: @challenge.points.to_s
+        assert_text "Completed"
+      end
+    end
+
+    assert_equal 1, writes, "One click on Full Points sent #{writes} writes"
+    assert_equal @challenge.points, Result.find_by(challenge: @challenge, user: @team).regular_points
+  end
+
+  # The award goes through the field's own form now, so it inherits that form's rule
+  # about not re-posting a value it has already sent. Somebody leaning on the button
+  # should not put one write per click through every other scorer's screen.
+  test "awarding full points again writes nothing" do
+    visit scoring_score_url(@team)
+
+    within "tr", text: @challenge.description do
+      click_on "Full Points"
+      assert_field id: "regularPoints_#{@challenge.id}", with: @challenge.points.to_s
+    end
+
+    writes = counting_scoring_updates do
+      within("tr", text: @challenge.description) { click_on "Full Points" }
+    end
+
+    assert_equal 0, writes, "Re-awarding the same points sent #{writes} writes"
+  end
+
   test "a blank score is refused and the stored value comes back" do
     visit scoring_score_url(@team)
 
@@ -132,6 +172,25 @@ class ScoringTest < ApplicationSystemTestCase
       assert_selector "##{ActionView::RecordIdentifier.dom_id(@challenge, :row)}", text: "42"
       assert_selector "#team_total_points", text: "-358"
     end
+  end
+
+  # Counting what actually reached the controller is the only way to tell one write
+  # from two that happen to agree on the value, and the UI cannot show the difference.
+  def counting_scoring_updates
+    writes = 0
+    subscriber = ActiveSupport::Notifications.subscribe("process_action.action_controller") do |*, payload|
+      writes += 1 if payload[:controller] == "ScoringController" && payload[:action] == "update"
+    end
+
+    yield
+
+    # The second write would follow the first within a few milliseconds. There is no
+    # event to wait for when the point is that nothing else arrives, so give a
+    # straggler a window several times that long before counting.
+    sleep 0.5
+    writes
+  ensure
+    ActiveSupport::Notifications.unsubscribe(subscriber)
   end
 
   test "non-scorer cannot access scoring interface" do
