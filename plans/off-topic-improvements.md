@@ -222,3 +222,22 @@ they are why six of the sixteen hk gates are currently red.
   (`ActionDispatch::Http::Cache::Request.strict_freshness`,
   `ActiveSupport.escape_js_separators_in_json`) rather than trusting the assignment. Worth an
   upstream Rails issue.
+
+- **The scoring page can fire two writes for one intention.**
+  Found while fixing the `RecordNotUnique` race (`app/controllers/scoring_controller.rb`). Each
+  points cell is a `form_with` that auto-submits on `change`, and the "Full Points" button in the
+  same row is a separate `button_to`. Clicking that button while a points input is focused with an
+  edited value blurs the input first, so `change` fires and posts the typed value, and the click
+  then posts `challenge.points` — two writes to `regular_points`, ~50ms apart, which is exactly the
+  pair visible in the 2026-08-11 production log. When the two values agree it is a harmless
+  duplicate; when they differ the row ends up holding whichever request commits last, and the
+  scorer sees a value they did not choose. The controller no longer 500s on it, but the ambiguity
+  is still there. Options: have the button submit the row's form with the full-points value rather
+  than posting on its own, or ignore the pending `change` when the submitter is the full-points
+  button.
+
+- **`plans/repo-review-2026-08-07.md` predates the Turbo Stream rewrite.**
+  Line 77 raises a leak in `GroupUpdatesChannel` and line 175 asks for the duplication between
+  `ScoringController#update` and `ScoringChannel#receive` to be factored out. Both channels were
+  deleted by commits `6a85c83` and `562b5c1`, so those two items are already closed and should be
+  struck rather than re-investigated.
