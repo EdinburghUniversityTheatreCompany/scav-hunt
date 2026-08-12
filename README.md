@@ -218,6 +218,18 @@ In production, this website uses Redis as an [ActionCable](https://guides.rubyon
 1) The `action_cable.allowed_request_origins` config needs to be set in `production.rb`, which is done based on the `HOST_URL` env variable.
 2) You need to add a location to your Nginx config file within the server for the scav-hunt website. See the sample Nginx config below.
 
+`HOST_URL` is a bare `host[:port]`, so `docker-compose.yml` is what wraps it into the two
+shapes ActionCable actually wants, and both of them need a scheme:
+
+| Variable | Built as | Why the scheme matters |
+| --- | --- | --- |
+| `ACTION_CABLE_FRONTEND_URL` | `wss://${HOST_URL}/cable` | It is emitted verbatim into `<meta name="action-cable-url">`. A scheme-less value is a *relative* URL, so the browser resolves it against the page it is on and dials `/scoring/<hostname>` instead — no live updates, and a routing error per reconnect in the logs. |
+| `ACTION_CABLE_ALLOWED_REQUEST_ORIGINS` | `https://${HOST_URL}` | Compared against the browser's `Origin` header, which always carries a scheme. |
+
+Both are asserted by `test/deployment/action_cable_env_test.rb`, because nothing else in
+the suite can catch them: `config/cable.yml` uses the test adapter, so a broken endpoint
+only ever shows up in production.
+
 ### Nginx Config
 Add this server to your Nginx config file. You might need to change the domain and SSL certificate locations.
 
