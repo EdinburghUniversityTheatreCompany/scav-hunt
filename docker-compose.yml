@@ -14,8 +14,14 @@ services:
       SCAV_HUNT_DATABASE_NAME: "${DATABASE_NAME}"
       SCAV_HUNT_DATABASE_HOST: database
       REDIS_URL: "redis://redis:6379/1"
-      ACTION_CABLE_FRONTEND_URL: "${HOST_URL}"
-      ACTION_CABLE_ALLOWED_REQUEST_ORIGINS: "${HOST_URL}"
+      # HOST_URL is a bare host[:port] (see README), and both of these need a scheme
+      # around it. Passing it through raw broke both: the browser resolved a
+      # scheme-less action-cable-url *relative to the current page*, so every scorer's
+      # WebSocket went to /scoring/<hostname> and 404'd, and an Origin header is
+      # "https://<host>", which a bare host never string-matches. Serving is over TLS
+      # via the Nginx block in the README, matching config.force_ssl = true.
+      ACTION_CABLE_FRONTEND_URL: "wss://${HOST_URL}/cable"
+      ACTION_CABLE_ALLOWED_REQUEST_ORIGINS: "https://${HOST_URL}"
     depends_on:
       database:
         condition: service_healthy
