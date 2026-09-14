@@ -56,6 +56,7 @@ services:
       test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
     volumes:
       - redis_data:/data
+    restart: always
 
 volumes:
   mysql_data:
