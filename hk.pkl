@@ -68,7 +68,7 @@ local linters = new Mapping<String, Step> {
     // `.jscpd.json` `ignore` globs exclude vendored/generated paths (vendor/, db/schema.rb etc.).
     // The key must be `ignore` — jscpd v5 silently ignores `ignorePattern` for paths, which let
     // CI scan CI-installed vendor/bundle gems. (See SKILL.md › jscpd note.)
-    // The version-cooldown policy (latest on a 4-day cooldown, floored at v5) and the
+    // The version-cooldown policy (latest on a 3-day cooldown, floored at v5) and the
     // offline fallback live in scripts/run-jscpd.sh, shared with the CI audit job so the
     // local and CI gates can't drift.
     ["jscpd"] {

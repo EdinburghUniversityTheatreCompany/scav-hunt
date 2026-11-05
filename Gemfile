@@ -1,8 +1,8 @@
-source "https://rubygems.org", cooldown: 4
+source "https://rubygems.org", cooldown: 3
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 # >= 8.1.3.1 is a security floor: it is the release that fixes the Active
-# Storage variant-processing RCE. Declaring it explicitly also stops the 4-day
+# Storage variant-processing RCE. Declaring it explicitly also stops the 3-day
 # `cooldown:` above from resolving back to an older, vulnerable 8.1.x.
 gem "rails", "~> 8.1.3", ">= 8.1.3.1"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]

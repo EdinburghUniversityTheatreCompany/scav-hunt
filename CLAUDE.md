@@ -191,8 +191,8 @@ cause.
 
 ## Supply-chain seasoning
 
-`Gemfile` line 1 pins `source "https://rubygems.org", cooldown: 4` and `mise.toml` sets
-`minimum_release_age = "4d"`. Both are deliberate: a newly published version must age four
+`Gemfile` line 1 pins `source "https://rubygems.org", cooldown: 3` and `mise.toml` sets
+`minimum_release_age = "3d"`. Both are deliberate: a newly published version must age three
 days before it can be resolved. Do not remove them.
 
 `BUNDLED WITH` is Bundler 4.0.23, which enforces `cooldown:` natively (Bundler before 4.0.13

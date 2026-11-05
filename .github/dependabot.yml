@@ -4,13 +4,27 @@ updates:
   directory: "/"
   schedule:
     interval: daily
-  open-pull-requests-limit: 10
   cooldown:
-    default-days: 7
+    default-days: 3
+  open-pull-requests-limit: 10
+  groups:
+    gems:
+      patterns: ["*"]
+      update-types: [minor, patch]
+    gems-security:
+      applies-to: security-updates
+      patterns: ["*"]
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
     interval: daily
-  open-pull-requests-limit: 10
   cooldown:
-    default-days: 7
+    default-days: 3
+  open-pull-requests-limit: 10
+  groups:
+    actions:
+      patterns: ["*"]
+      update-types: [minor, patch]
+    actions-security:
+      applies-to: security-updates
+      patterns: ["*"]

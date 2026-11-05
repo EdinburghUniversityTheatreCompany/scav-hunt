@@ -270,7 +270,7 @@ request against `master`. `hk run check --all` must be green before you push —
 gates. Agent-facing notes on the codebase, the pinned versions and the known-failing gates live
 in [`CLAUDE.md`](CLAUDE.md).
 
-The Gemfile pins a 4-day RubyGems `cooldown:` and `mise.toml` a 4-day `minimum_release_age`.
+The Gemfile pins a 3-day RubyGems `cooldown:` and `mise.toml` a 3-day `minimum_release_age`.
 Both are deliberate supply-chain seasoning — please leave them in place.
 
 ## License
