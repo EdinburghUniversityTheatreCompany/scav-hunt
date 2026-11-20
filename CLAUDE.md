@@ -21,7 +21,7 @@ Read from the manifests in this repo. Do not take versions from memory — re-re
 
 | Package | Version | Source |
 | --- | --- | --- |
-| Ruby | 3.4.10 | `.ruby-version`, `mise.toml`, `Dockerfile` `ARG RUBY_VERSION` |
+| Ruby | 3.4.13 | `.ruby-version`, `mise.toml`, `Dockerfile` `ARG RUBY_VERSION` |
 | Rails | 8.1.4 | `Gemfile.lock` (`Gemfile` pins `~> 8.1.3` with a `>= 8.1.3.1` security floor) |
 | mysql2 | 0.5.7 | `Gemfile.lock` (`Gemfile`: `~> 0.5`) |
 | Devise | 5.0.4 | `Gemfile.lock` |

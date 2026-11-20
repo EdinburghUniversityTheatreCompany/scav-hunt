@@ -27,7 +27,7 @@ Versions below are the ones actually resolved in `Gemfile.lock` / `yarn.lock`.
 
 | | Version |
 | --- | --- |
-| Ruby | 3.4.10 |
+| Ruby | 3.4.13 |
 | Rails | 8.1.4 |
 | mysql2 (MySQL adapter) | 0.5.7 |
 | Devise (authentication) | 5.0.4 |
@@ -71,7 +71,7 @@ and mise itself.
 4. Install the toolchain and the dependencies, then create the database:
 
 ```bash
-mise install       # ruby 3.4.10, node 22.23.4, yarn 1.22.19 + the lint tooling
+mise install       # ruby 3.4.13, node 22.23.4, yarn 1.22.19 + the lint tooling
 bundle install
 yarn install
 bin/rails db:setup
